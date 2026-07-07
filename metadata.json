@@ -1,0 +1,6 @@
+{
+  "name": "Lumina Agendamentos",
+  "description": "Sistema premium de agendamentos para salões de beleza e clínicas de estética.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

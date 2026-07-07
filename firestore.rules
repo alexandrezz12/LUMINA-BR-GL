@@ -1,0 +1,188 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isValidTenant(data, docId) {
+      return data.slug is string && data.slug == docId && data.slug.size() >= 3 && data.slug.size() <= 100
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.type in ['salon', 'clinic', 'barbershop', 'barber', 'studio', 'other']
+        && data.status in ['trial', 'active', 'inactive', 'past_due']
+        && data.plan in ['standard', 'pro']
+        && data.ownerId == request.auth.uid
+        && data.keys().hasAny(['slug', 'name', 'type', 'status', 'plan', 'createdAt', 'ownerId', 'trialEndsAt']);
+    }
+    
+    function isValidService(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.description is string && data.description.size() <= 1000
+        && data.duration is number && data.duration > 0 && data.duration <= 1440
+        && data.price is number && data.price >= 0
+        && data.keys().hasAll(['name', 'description', 'duration', 'price']);
+    }
+    
+    function isValidProfessional(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.role is string && data.role.size() <= 100
+        && data.avatar is string && data.avatar.size() <= 1048576
+        && data.serviceIds is list && data.serviceIds.size() <= 50 && (data.serviceIds.size() == 0 || data.serviceIds[0] is string)
+        && (!data.keys().hasAny(['workingDays']) || (data.workingDays is list && data.workingDays.size() <= 7 && (data.workingDays.size() == 0 || data.workingDays[0] is number)))
+        && data.keys().hasAll(['name', 'role', 'avatar', 'serviceIds']);
+    }
+
+    function isValidAppointment(data) {
+      return data.serviceId is string && data.serviceId.size() <= 128
+        && data.professionalId is string && data.professionalId.size() <= 128
+        && data.date is string && data.date.size() <= 20
+        && data.time is string && data.time.size() <= 5
+        && data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 200
+        && data.customerPhone is string && data.customerPhone.size() >= 10 && data.customerPhone.size() <= 20
+        && data.status in ['confirmed', 'pending', 'cancelled']
+        && data.keys().hasAll(['serviceId', 'professionalId', 'date', 'time', 'customerName', 'customerPhone', 'createdAt', 'status']);
+    }
+    
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.email == 'alexandrealvesszz12@gmail.com';
+    }
+
+    function isOwner(tenantId) {
+      let tenantDoc = get(/databases/$(database)/documents/tenants/$(tenantId));
+      return tenantDoc != null && (tenantDoc.data.ownerId == request.auth.uid || isSuperAdmin());
+    }
+
+    match /tenants/{tenantId} {
+      allow get: if true;
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin());
+      
+      allow create: if isSignedIn() 
+        && isValidId(tenantId)
+        && isValidTenant(incoming(), tenantId)
+        && incoming().createdAt == request.time;
+        
+      allow update: if isSignedIn() 
+        && isValidId(tenantId)
+        && (
+          (
+            existing().ownerId == request.auth.uid
+            && isValidTenant(incoming(), tenantId)
+            && incoming().ownerId == existing().ownerId
+            && incoming().createdAt == existing().createdAt
+            && (
+                (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type']))
+                ||
+                (incoming().diff(existing()).affectedKeys().hasOnly(['slug']))
+            )
+          ) || isSuperAdmin()
+        );
+        
+      allow delete: if false;
+
+      match /services/{serviceId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isSignedIn()
+          && isValidId(serviceId)
+          && isOwner(tenantId)
+          && isValidService(incoming())
+          && incoming().keys().size() == 4;
+        allow update: if isSignedIn()
+          && isValidId(serviceId)
+          && isOwner(tenantId)
+          && isValidService(incoming())
+          && incoming().keys().size() == 4
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'duration', 'price']);
+        allow delete: if isSignedIn() && isValidId(serviceId) && isOwner(tenantId);
+      }
+
+      match /professionals/{professionalId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isSignedIn()
+          && isValidId(professionalId)
+          && isOwner(tenantId)
+          && isValidProfessional(incoming())
+          && (incoming().keys().size() == 4 || incoming().keys().size() == 5);
+        allow update: if isSignedIn()
+          && isValidId(professionalId)
+          && isOwner(tenantId)
+          && isValidProfessional(incoming())
+          && (incoming().keys().size() == 4 || incoming().keys().size() == 5)
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'avatar', 'serviceIds', 'workingDays']);
+        allow delete: if isSignedIn() && isValidId(professionalId) && isOwner(tenantId);
+      }
+
+      match /appointments/{appointmentId} {
+        allow get: if isSignedIn() && isValidId(appointmentId) && isOwner(tenantId);
+        allow list: if isSignedIn() && isOwner(tenantId);
+        
+        allow create: if isValidId(appointmentId)
+          && isValidAppointment(incoming())
+          && incoming().keys().size() == 8
+          && incoming().status == 'pending'
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/tenants/$(tenantId)/services/$(incoming().serviceId))
+          && exists(/databases/$(database)/documents/tenants/$(tenantId)/professionals/$(incoming().professionalId));
+        
+        allow update: if isSignedIn()
+          && isValidId(appointmentId)
+          && isOwner(tenantId)
+          && isValidAppointment(incoming())
+          && incoming().keys().size() == 8
+          && incoming().createdAt == existing().createdAt
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+          
+        allow delete: if false;
+      }
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isValidId(reviewId)
+          && incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5
+          && incoming().comment is string && incoming().comment.size() <= 1000
+          && incoming().customerName is string && incoming().customerName.size() > 0 && incoming().customerName.size() <= 200
+          && incoming().serviceName is string && incoming().serviceName.size() <= 200
+          && incoming().createdAt == request.time;
+        allow update, delete: if isSignedIn() && isOwner(tenantId);
+      }
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isSuperAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId 
+        && incoming().email == request.auth.token.email
+        && incoming().subscription_status == 'free'; // Initial user creation is allowed with 'free' status
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && incoming().email == existing().email;
+      allow delete: if false;
+
+      match /subscriptions/{subId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /payments/{paymentId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /invoices/{invoiceId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /payment_logs/{logId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

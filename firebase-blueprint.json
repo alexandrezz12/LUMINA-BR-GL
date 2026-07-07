@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "Tenant": {
+      "title": "Tenant",
+      "description": "Represents a store/clinic (loja)",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["salon", "clinic", "barbershop", "barber", "studio", "other"] },
+        "status": { "type": "string", "enum": ["trial", "active", "inactive", "past_due"] },
+        "plan": { "type": "string", "enum": ["standard", "pro"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["slug", "name", "type", "status", "plan", "createdAt", "ownerId"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Represents a service offered by a tenant",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "duration": { "type": "number" },
+        "price": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["name", "description", "duration", "price", "category"]
+    },
+    "Professional": {
+      "title": "Professional",
+      "description": "Represents a professional working in a tenant",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "avatar": { "type": "string" },
+        "serviceIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "role", "avatar", "serviceIds"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Represents an appointment made by a customer",
+      "type": "object",
+      "properties": {
+        "serviceId": { "type": "string" },
+        "professionalId": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["confirmed", "pending", "cancelled"] }
+      },
+      "required": ["serviceId", "professionalId", "date", "time", "customerName", "customerPhone", "createdAt", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Represents a feedback review left by a customer",
+      "type": "object",
+      "properties": {
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "customerName": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["rating", "comment", "customerName", "serviceName", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents a user of Lumina SaaS with their Stripe subscription info",
+      "type": "object",
+      "properties": {
+        "stripe_customer_id": { "type": "string" },
+        "stripe_subscription_id": { "type": "string" },
+        "stripe_price_id": { "type": "string" },
+        "subscription_status": { "type": "string" },
+        "next_billing_date": { "type": "string", "format": "date-time" },
+        "current_period_end": { "type": "string", "format": "date-time" },
+        "trial_end": { "type": "string", "format": "date-time" },
+        "payment_method": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "subscription_status"]
+    },
+    "UserSubscription": {
+      "title": "UserSubscription",
+      "description": "Detailed Stripe subscription document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string" },
+        "priceId": { "type": "string" },
+        "plan": { "type": "string" },
+        "currentPeriodStart": { "type": "string", "format": "date-time" },
+        "currentPeriodEnd": { "type": "string", "format": "date-time" },
+        "trialStart": { "type": "string", "format": "date-time" },
+        "trialEnd": { "type": "string", "format": "date-time" },
+        "cancelAtPeriodEnd": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "status", "priceId", "plan", "createdAt"]
+    },
+    "UserPayment": {
+      "title": "UserPayment",
+      "description": "Historical checkout payment records for the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "invoiceId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "amount", "currency", "status", "createdAt"]
+    },
+    "UserInvoice": {
+      "title": "UserInvoice",
+      "description": "Historical subscription invoices generated by Stripe",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "amountDue": { "type": "number" },
+        "status": { "type": "string" },
+        "invoiceUrl": { "type": "string" },
+        "invoicePdf": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "amountPaid", "amountDue", "status", "createdAt"]
+    },
+    "UserPaymentLog": {
+      "title": "UserPaymentLog",
+      "description": "Stripe webhook payment logs for auditing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventType": { "type": "string" },
+        "payload": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "eventType", "timestamp"]
+    }
+  },
+  "firestore": {
+    "tenants/{tenantId}": {
+      "schema": { "$ref": "#/entities/Tenant" },
+      "description": "Stores tenant data"
+    },
+    "tenants/{tenantId}/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/Service" },
+      "description": "Stores services data globally, mapped to tenantId"
+    },
+    "tenants/{tenantId}/professionals/{professionalId}": {
+      "schema": { "$ref": "#/entities/Professional" },
+      "description": "Stores professionals globally, mapped to tenantId"
+    },
+    "tenants/{tenantId}/appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/Appointment" },
+      "description": "Stores appointments globally, mapped to tenantId"
+    },
+    "tenants/{tenantId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Stores reviews left by customers mapping to tenantId"
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores SaaS user profile and subscription metadata"
+    },
+    "users/{userId}/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/UserSubscription" },
+      "description": "Subcollection storing details of individual subscriptions"
+    },
+    "users/{userId}/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/UserPayment" },
+      "description": "Subcollection storing payment history records"
+    },
+    "users/{userId}/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/UserInvoice" },
+      "description": "Subcollection storing invoices history"
+    },
+    "users/{userId}/payment_logs/{logId}": {
+      "schema": { "$ref": "#/entities/UserPaymentLog" },
+      "description": "Subcollection storing payment webhook audit logs"
+    }
+  }
+}
