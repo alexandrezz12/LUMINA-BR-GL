@@ -131,7 +131,7 @@ export function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-950 text-white selection:bg-brand-800 selection:text-white font-sans overflow-x-hidden antialiased">
+    <div className="min-h-screen bg-brand-950 text-white selection:bg-brand-800 selection:text-white font-sans relative w-full max-w-full overflow-x-hidden antialiased">
       
       {/* Decorative Grid and Ambient Lights */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
