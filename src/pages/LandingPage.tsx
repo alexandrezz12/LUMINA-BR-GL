@@ -66,12 +66,11 @@ export function LandingPage() {
     { id: 3, time: "14:00", customer: "Bruno Alencar", service: "Barba Terapia", status: "link", professional: "Thiago" },
   ]);
 
-  const handleStartTrial = async () => {
+  const handleStartTrial = () => {
     if (user) {
       navigate("/admin");
     } else {
-      await signIn();
-      navigate("/admin");
+      navigate("/login");
     }
   };
 
@@ -164,14 +163,14 @@ export function LandingPage() {
             ) : (
               <>
                 <button 
-                  onClick={signIn} 
-                  className="text-sm font-semibold text-brand-300 hover:text-white transition-colors"
+                  onClick={() => navigate("/login")} 
+                  className="text-sm font-semibold text-brand-300 hover:text-white transition-colors cursor-pointer"
                 >
                   Entrar no sistema
                 </button>
                 <button 
                   onClick={handleStartTrial}
-                  className="px-5 py-2.5 bg-brand-900 hover:bg-brand-850 text-white text-sm font-semibold rounded-xl transition-all border border-white/[0.08] shadow-lg flex items-center gap-2 active:scale-95"
+                  className="px-5 py-2.5 bg-brand-900 hover:bg-brand-850 text-white text-sm font-semibold rounded-xl transition-all border border-white/[0.08] shadow-lg flex items-center gap-2 active:scale-95 cursor-pointer"
                 >
                   Criar conta grátis
                 </button>
@@ -216,14 +215,14 @@ export function LandingPage() {
                   ) : (
                     <>
                       <button 
-                        onClick={() => { signIn(); setMobileMenuOpen(false); }} 
-                        className="w-full py-3 border border-white/[0.08] text-white font-semibold rounded-xl text-center block bg-brand-900/30"
+                        onClick={() => { navigate("/login"); setMobileMenuOpen(false); }} 
+                        className="w-full py-3 border border-white/[0.08] text-white font-semibold rounded-xl text-center block bg-brand-900/30 cursor-pointer"
                       >
                         Entrar
                       </button>
                       <button 
-                        onClick={() => { handleStartTrial(); setMobileMenuOpen(false); }}
-                        className="w-full py-3 bg-brand-900 text-white font-bold rounded-xl text-center block"
+                        onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}
+                        className="w-full py-3 bg-brand-900 text-white font-bold rounded-xl text-center block cursor-pointer"
                       >
                         Começar 7 dias grátis
                       </button>

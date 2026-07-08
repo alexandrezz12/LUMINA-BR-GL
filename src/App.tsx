@@ -38,7 +38,27 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = user.email === "alexandrealvesszz12@gmail.com";
   const subscriptionStatus = dbUser?.subscription_status;
-  const hasActiveSubscription = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+  
+  // Calculate if the user is within the 7-day free trial period since registration (createdAt)
+  let isWithinTrial = false;
+  if (dbUser?.createdAt) {
+    try {
+      const createdTime = new Date(dbUser.createdAt).getTime();
+      const now = new Date().getTime();
+      const diffTime = now - createdTime;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0 && diffDays <= 7) {
+        isWithinTrial = true;
+      }
+    } catch (e) {
+      console.error("Error parsing user createdAt date:", e);
+    }
+  }
+
+  const hasActiveSubscription = 
+    subscriptionStatus === "active" || 
+    subscriptionStatus === "trialing" || 
+    isWithinTrial;
 
   if (!isSuperAdmin && !hasActiveSubscription) {
     return <Navigate to="/admin/planos" replace />;

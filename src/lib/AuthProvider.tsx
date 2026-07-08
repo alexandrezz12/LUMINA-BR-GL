@@ -73,15 +73,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setDbUser(snapshot.data() as DBUserType);
           } else {
             // Auto create free tier user doc on first sign in
-            setDoc(userRef, {
+            const defaultUserDoc = {
               email: currentUser.email || "",
               displayName: currentUser.displayName || "",
               subscription_status: "free",
               createdAt: new Date().toISOString()
-            }).catch((e) => {
+            };
+            setDoc(userRef, defaultUserDoc).catch((e) => {
               console.error("Error creating default user profile:", e);
             });
+            setDbUser(defaultUserDoc);
           }
+          setLoading(false);
         }, (error) => {
           console.error("Firestore onSnapshot error for user profile:", error);
           // Let's call handleFirestoreError for tracking, but don't halt the UI
@@ -90,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } catch (e) {
             // Ignored
           }
+          setLoading(false);
         });
 
         // Background synchronization of Stripe subscription status to heal missing database records
@@ -120,8 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         syncStripeSubscription();
       } else {
         setDbUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
