@@ -43,10 +43,12 @@ export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Set body background to dark brand-950 on mount to prevent white overscroll
+    // Set body and html background to dark brand-950 on mount to prevent white overscroll
     document.body.style.backgroundColor = "#151e1b";
+    document.documentElement.style.backgroundColor = "#151e1b";
     return () => {
       document.body.style.backgroundColor = "";
+      document.documentElement.style.backgroundColor = "";
     };
   }, []);
 
