@@ -23,6 +23,8 @@ interface AuthContextType {
   dbUser: DBUserType | null;
   loading: boolean;
   signIn: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logOut: () => Promise<void>;
 }
 
@@ -165,6 +167,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithEmail = async (email: string, pass: string) => {
+    const { signInWithEmailAndPassword } = await import("firebase/auth");
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, name: string) => {
+    const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(userCredential.user, { displayName: name });
+    
+    // Explicitly set the user document in Firestore to ensure the displayName is saved correctly and immediately!
+    const userRef = doc(db, "users", userCredential.user.uid);
+    await setDoc(userRef, {
+      email: email,
+      displayName: name,
+      subscription_status: "free",
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+  };
+
   const logOut = async () => {
     try {
       await signOut(auth);
@@ -174,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, dbUser, loading, signIn, logOut }}>
+    <AuthContext.Provider value={{ user, dbUser, loading, signIn, signInWithEmail, signUpWithEmail, logOut }}>
       {loading ? (
         <div className="flex h-screen w-full items-center justify-center bg-brand-50">
           <Loader2 className="h-8 w-8 animate-spin text-brand-900" />

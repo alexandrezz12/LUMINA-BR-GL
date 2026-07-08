@@ -14,6 +14,7 @@ import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
 import { PublicBooking } from './pages/PublicBooking';
 import { LandingPage } from './pages/LandingPage';
 import { Pricing } from './pages/Pricing';
+import { Login } from './pages/Login';
 import { AuthProvider, useAuth } from './lib/AuthProvider';
 import { Loader2, Menu } from 'lucide-react';
 import { useState } from 'react';
@@ -66,29 +67,6 @@ function SubscriptionRoute({ children }: { children: ReactNode }) {
 function PricingPageWrapper() {
   const { dbUser } = useAuth();
   return <Pricing currentStatus={dbUser?.subscription_status} />;
-}
-
-function Login() {
-  const { user, signIn } = useAuth();
-  
-  if (user) {
-    return <Navigate to="/admin" replace />;
-  }
-  
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-brand-50">
-      <div className="bg-white p-8 rounded-3xl border border-brand-100 shadow-xl max-w-sm w-full text-center">
-        <h1 className="text-3xl font-medium text-brand-900 mb-2">Lumina</h1>
-        <p className="text-brand-500 mb-8">Gestão de agendamentos premium</p>
-        <button 
-          onClick={signIn}
-          className="w-full bg-brand-900 hover:bg-brand-800 text-white font-medium py-3 rounded-xl transition-colors"
-        >
-          Entrar com Google
-        </button>
-      </div>
-    </div>
-  );
 }
 
 function AdminLayout() {

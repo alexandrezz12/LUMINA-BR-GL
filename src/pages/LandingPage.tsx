@@ -42,6 +42,12 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      navigate("/admin");
+    }
+  }, [user, navigate]);
+
   // States for interactive product demo
   const [activeDemoTab, setActiveDemoTab] = useState<"booking" | "calendar" | "team" | "financial">("booking");
   
