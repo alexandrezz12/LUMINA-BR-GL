@@ -1,10 +1,10 @@
 {
-  "projectId": "seraphic-envelope-k8gvj",
-  "appId": "1:714811834298:web:3187501296b738df26a783",
-  "apiKey": "AIzaSyCx28V_pmlcIWicNzpFm_PRAtCBe-fVmEU",
-  "authDomain": "seraphic-envelope-k8gvj.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-411eec70-00b4-4773-ad68-e69f6be41ae9",
-  "storageBucket": "seraphic-envelope-k8gvj.firebasestorage.app",
-  "messagingSenderId": "714811834298",
-  "measurementId": ""
+  "projectId": "lumina-agendamentos",
+  "appId": "1:628645924284:web:3772574f1357bbdd84efb9",
+  "apiKey": "AIzaSyBequSEim2FzBbWv-wxnrx6kIYwLwogmqw",
+  "authDomain": "lumina-agendamentos.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "lumina-agendamentos.firebasestorage.app",
+  "messagingSenderId": "628645924284",
+  "measurementId": "G-2KXN5TLLV0"
 }

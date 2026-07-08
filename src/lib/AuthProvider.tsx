@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { User, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db, handleFirestoreError, OperationType } from "./firebase";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
@@ -39,6 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubSnapshot: (() => void) | null = null;
+
+    // Processar o resultado de login via redirecionamento (especialmente útil no mobile)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("Usuário autenticado com sucesso via redirect:", result.user);
+        }
+      })
+      .catch((error: any) => {
+        console.error("Erro no redirecionamento do Firebase Auth:", error);
+        if (error.code === "auth/unauthorized-domain") {
+          toast.error("Domínio não autorizado! Adicione luminaagendamento.com.br e seu link do Vercel aos 'Domínios Autorizados' no Console do Firebase.");
+        } else {
+          toast.error("Erro ao completar login via redirecionamento. Verifique se os pop-ups ou cookies estão permitidos.");
+        }
+      });
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -113,12 +129,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    // Verificar se o dispositivo é móvel ou tela muito pequena (onde popups falham)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+    if (isMobile) {
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (error: any) {
+        console.error("Sign-in with redirect error", error);
+        toast.error("Erro ao fazer login via redirecionamento. Tente novamente.");
+      }
+      return;
+    }
+
     try {
-      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign-in error", error);
-      toast.error("Failed to sign in. If you have popups blocked, please allow them and try again.");
+      if (error.code === "auth/popup-blocked") {
+        toast.info("Pop-up bloqueado pelo navegador. Redirecionando para página de login...");
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          console.error("Redirect fallback error", redirectError);
+          toast.error("Falha ao tentar redirecionar. Permita pop-ups no navegador e tente de novo.");
+        }
+      } else if (error.code === "auth/unauthorized-domain") {
+        toast.error("Domínio não autorizado no Firebase! Adicione luminaagendamento.com.br e seu link do Vercel aos 'Domínios Autorizados' no Console do Firebase.");
+      } else {
+        toast.error("Falha ao entrar com Google. Se tiver bloqueadores de pop-up ou cookies, por favor, permita-os.");
+      }
     }
   };
 
