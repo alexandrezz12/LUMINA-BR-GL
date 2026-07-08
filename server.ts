@@ -709,26 +709,30 @@ app.post("/api/webhook/stripe", async (req: any, res) => {
 
 
 // ======== VITE MIDDLEWARE ========
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    // Development mode
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    // Production mode
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+export default app;
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+if (!process.env.VERCEL) {
+  const startServer = async () => {
+    if (process.env.NODE_ENV !== "production") {
+      // Development mode
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } else {
+      // Production mode
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  };
+
+  startServer();
 }
-
-startServer();

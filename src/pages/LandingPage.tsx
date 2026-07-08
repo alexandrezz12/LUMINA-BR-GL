@@ -43,6 +43,14 @@ export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    // Set body background to dark brand-950 on mount to prevent white overscroll
+    document.body.style.backgroundColor = "#151e1b";
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
+  }, []);
+
+  useEffect(() => {
     if (user) {
       navigate("/admin");
     }

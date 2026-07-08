@@ -17,7 +17,10 @@
   --color-brand-950: #151e1b;
 }
 
+html,
 body {
+  max-width: 100%;
+  overflow-x: hidden;
   @apply bg-brand-50 text-brand-950 font-sans antialiased;
 }
 
