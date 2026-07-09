@@ -15,34 +15,68 @@ let dbAdmin: any = null;
 try {
   let adminApp: any;
   let dbId = "default";
-  if (fs.existsSync("./firebase-applet-config.json")) {
-    const config = JSON.parse(fs.readFileSync("./firebase-applet-config.json", "utf8"));
-    const appConfig: admin.AppOptions = { 
-      projectId: config.projectId,
-      credential: admin.applicationDefault()
-    };
-    if (admin.getApps().length === 0) {
-      adminApp = admin.initializeApp(appConfig);
-    } else {
-      adminApp = admin.getApp();
+  
+  // Resolve firebase-applet-config.json safely using process.cwd() so it works under Vercel bundling
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  let config: any = null;
+  if (fs.existsSync(configPath)) {
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    } catch (err) {
+      console.warn("Could not parse firebase-applet-config.json:", err);
     }
-    if (config.firestoreDatabaseId) {
-      dbId = config.firestoreDatabaseId;
-      dbAdmin = getFirestore(adminApp, config.firestoreDatabaseId);
-    } else {
-      dbAdmin = getFirestore(adminApp);
-    }
-  } else {
-    if (admin.getApps().length === 0) {
-      adminApp = admin.initializeApp();
-    } else {
-      adminApp = admin.getApp();
-    }
-    dbAdmin = getFirestore(adminApp);
   }
-  console.log("Firebase Admin initialized successfully with database:", dbId);
-} catch (e) {
-  console.error("Firebase Admin initialization failed:", e);
+
+  const projectId = config?.projectId || process.env.VITE_FIREBASE_PROJECT_ID || "lumina-agendamentos";
+  const dbIdFromConfig = config?.firestoreDatabaseId || "(default)";
+
+  // Try to find service account credentials in environment variables
+  const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  let credential: any = null;
+
+  if (serviceAccountVar) {
+    try {
+      let saJson: any;
+      if (serviceAccountVar.trim().startsWith("{")) {
+        saJson = JSON.parse(serviceAccountVar);
+      } else {
+        // Handle base64 encoded service account
+        saJson = JSON.parse(Buffer.from(serviceAccountVar, "base64").toString("utf8"));
+      }
+      credential = admin.cert(saJson);
+      console.log("Initializing Firebase Admin with Service Account from environment variable.");
+    } catch (saErr: any) {
+      console.warn("Found service account variable but failed to parse it:", saErr.message || saErr);
+    }
+  }
+
+  // If no service account env var, and we are NOT on Vercel, try applicationDefault (for Cloud Run)
+  if (!credential && !process.env.VERCEL) {
+    try {
+      credential = admin.applicationDefault();
+      console.log("Initializing Firebase Admin with Application Default Credentials.");
+    } catch (adcErr: any) {
+      console.warn("Application Default Credentials not available:", adcErr.message || adcErr);
+    }
+  }
+
+  // Set up initialization options
+  const appConfig: admin.AppOptions = { projectId };
+  if (credential) {
+    appConfig.credential = credential;
+  }
+
+  if (admin.getApps().length === 0) {
+    adminApp = admin.initializeApp(appConfig);
+  } else {
+    adminApp = admin.getApp();
+  }
+
+  dbId = dbIdFromConfig;
+  dbAdmin = getFirestore(adminApp, dbId);
+  console.log("Firebase Admin initialized successfully with database:", dbId, "Project:", projectId);
+} catch (e: any) {
+  console.error("Firebase Admin initialization failed:", e.message || e);
 }
 
 const app = express();
@@ -110,6 +144,11 @@ async function verifyGoogleTokenManually(token: string, projectId: string) {
     throw new Error(`Audience inválida: ${payload.aud}`);
   }
 
+  const currentTime = Math.floor(Date.now() / 1000);
+  if (payload.exp && currentTime > payload.exp + 300) { // 5-minute clock-skew buffer
+    throw new Error("O token de autenticação expirou.");
+  }
+
   const certsRes = await fetch("https://www.googleapis.com/robot/v1/metadata/x509/securetoken-system@system.gserviceaccount.com");
   if (!certsRes.ok) {
     throw new Error("Não foi possível buscar os certificados públicos do Google.");
@@ -150,9 +189,10 @@ async function getAuthenticatedUser(req: any) {
   } catch (err: any) {
     console.warn("verifyIdToken standard verification failed, attempting secure bypass for clock-skew:", err.message || err);
     try {
-      let projectId = "seraphic-envelope-k8gvj";
-      if (fs.existsSync("./firebase-applet-config.json")) {
-        const config = JSON.parse(fs.readFileSync("./firebase-applet-config.json", "utf8"));
+      let projectId = "lumina-agendamentos";
+      const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
         if (config.projectId) {
           projectId = config.projectId;
         }
