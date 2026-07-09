@@ -84,6 +84,10 @@ const PORT = 3000;
 
 app.use(cors());
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Backend fully operational on Vercel!" });
+});
+
 // Support Vercel serverless routing where the /api prefix might be stripped by the serverless handler
 app.use((req, res, next) => {
   if (process.env.VERCEL && !req.url.startsWith("/api/")) {
