@@ -158,10 +158,8 @@ service cloud.firestore {
       allow get: if isSignedIn() && request.auth.uid == userId;
       allow list: if isSuperAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId 
-        && incoming().email == request.auth.token.email
         && incoming().subscription_status == 'free'; // Initial user creation is allowed with 'free' status
-      allow update: if isSignedIn() && request.auth.uid == userId
-        && incoming().email == existing().email;
+      allow update: if isSignedIn() && request.auth.uid == userId;
       allow delete: if false;
 
       match /subscriptions/{subId} {

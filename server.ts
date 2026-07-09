@@ -50,6 +50,14 @@ const PORT = 3000;
 
 app.use(cors());
 
+// Support Vercel serverless routing where the /api prefix might be stripped by the serverless handler
+app.use((req, res, next) => {
+  if (process.env.VERCEL && !req.url.startsWith("/api/")) {
+    req.url = "/api" + req.url;
+  }
+  next();
+});
+
 // Custom JSON parser to extract raw body for Stripe webhook signature verification
 app.use(express.json({
   verify: (req: any, res, buf) => {

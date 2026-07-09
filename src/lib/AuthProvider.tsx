@@ -173,18 +173,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, pass: string) => {
     const { signInWithEmailAndPassword } = await import("firebase/auth");
-    await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
   };
 
   const signUpWithEmail = async (email: string, pass: string, name: string) => {
     const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.toLowerCase().trim();
+    const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
     await updateProfile(userCredential.user, { displayName: name });
     
     // Explicitly set the user document in Firestore to ensure the displayName is saved correctly and immediately!
     const userRef = doc(db, "users", userCredential.user.uid);
     await setDoc(userRef, {
-      email: email,
+      email: cleanEmail,
       displayName: name,
       subscription_status: "free",
       createdAt: new Date().toISOString()
