@@ -46,6 +46,8 @@ export function Login() {
       
       if (err.code === "auth/email-already-in-use") {
         errMsg = "Este e-mail já está sendo utilizado por outra conta.";
+      } else if (err.code === "auth/operation-not-allowed") {
+        errMsg = "O provedor de e-mail e senha está desativado no Firebase! Por favor, acesse o Console do Firebase, vá em 'Authentication' > 'Sign-in method', ative o provedor 'E-mail/Senha' e salve as alterações.";
       } else if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
         errMsg = "E-mail ou senha incorretos. Por favor, verifique.";
       } else if (err.code === "auth/invalid-email") {
@@ -53,7 +55,7 @@ export function Login() {
       } else if (err.message) {
         errMsg = err.message;
       }
-      toast.error(errMsg);
+      toast.error(errMsg, { duration: 10000 });
     } finally {
       setLoading(false);
     }
