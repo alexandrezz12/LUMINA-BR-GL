@@ -138,35 +138,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
-    // Verificar se o dispositivo é móvel ou tela muito pequena (onde popups falham)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-
-    if (isMobile) {
-      try {
-        await signInWithRedirect(auth, provider);
-      } catch (error: any) {
-        console.error("Sign-in with redirect error", error);
-        toast.error("Erro ao fazer login via redirecionamento. Tente novamente.");
-      }
-      return;
-    }
-
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Sign-in error", error);
-      if (error.code === "auth/popup-blocked") {
-        toast.info("Pop-up bloqueado pelo navegador. Redirecionando para página de login...");
+      if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+        toast.info("Pop-up bloqueado ou fechado. Redirecionando para login seguro...");
         try {
           await signInWithRedirect(auth, provider);
         } catch (redirectError) {
           console.error("Redirect fallback error", redirectError);
-          toast.error("Falha ao tentar redirecionar. Permita pop-ups no navegador e tente de novo.");
+          toast.error("Falha ao tentar redirecionar. Permita pop-ups ou cookies no navegador.");
         }
       } else if (error.code === "auth/unauthorized-domain") {
-        toast.error("Domínio não autorizado no Firebase! Adicione luminaagendamento.com.br e seu link do Vercel aos 'Domínios Autorizados' no Console do Firebase.");
+        toast.error("Domínio não autorizado no Firebase! Adicione luminaagendamento.com.br e seus domínios de homologação na lista de 'Domínios Autorizados' no Console do Firebase.");
       } else {
-        toast.error("Falha ao entrar com Google. Se tiver bloqueadores de pop-up ou cookies, por favor, permita-os.");
+        // Tentativa de redirecionamento como fallback geral para navegadores móveis restritos
+        try {
+          console.log("Tentando fallback de redirect devido a restrição de popup.");
+          await signInWithRedirect(auth, provider);
+        } catch (redirectErr) {
+          toast.error("Falha ao entrar com Google. Verifique se cookies de terceiros estão permitidos.");
+        }
       }
     }
   };
