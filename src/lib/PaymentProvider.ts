@@ -65,10 +65,30 @@ export const PaymentProvider = {
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Erro ao iniciar o Stripe Checkout");
+    const contentType = response.headers.get("content-type");
+    let errorMsg = "Erro ao iniciar o Stripe Checkout";
+    let data: any = null;
+
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+      if (!response.ok) {
+        errorMsg = data.error || errorMsg;
+      }
+    } else {
+      const text = await response.text();
+      if (!response.ok) {
+        if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+          errorMsg = `O servidor retornou uma página HTML (Status ${response.status}). Verifique se o backend está respondendo corretamente e se as variáveis de ambiente (como STRIPE_SECRET_KEY e STRIPE_PRICE_*) estão configuradas no painel de configurações do AI Studio.`;
+        } else {
+          errorMsg = text || errorMsg;
+        }
+      }
     }
+
+    if (!response.ok) {
+      throw new Error(errorMsg);
+    }
+
     return data;
   },
 
@@ -88,10 +108,30 @@ export const PaymentProvider = {
       }),
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Erro ao abrir o Portal do Cliente");
+    const contentType = response.headers.get("content-type");
+    let errorMsg = "Erro ao abrir o Portal do Cliente";
+    let data: any = null;
+
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+      if (!response.ok) {
+        errorMsg = data.error || errorMsg;
+      }
+    } else {
+      const text = await response.text();
+      if (!response.ok) {
+        if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+          errorMsg = `O servidor retornou uma página HTML (Status ${response.status}). Verifique se as variáveis de ambiente do Stripe estão devidamente configuradas.`;
+        } else {
+          errorMsg = text || errorMsg;
+        }
+      }
     }
+
+    if (!response.ok) {
+      throw new Error(errorMsg);
+    }
+
     return data;
   }
 };
