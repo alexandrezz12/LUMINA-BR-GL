@@ -33,7 +33,8 @@ export function Pricing({ currentStatus }: PricingProps) {
         }
       }
 
-      window.open(result.url, "_blank");
+      // Redirect in the same window (prevents Safari/mobile popup blocker and pattern errors)
+      window.location.href = result.url;
     } catch (error: any) {
       console.error("Subscription error:", error);
       toast.error(error.message || "Não foi possível iniciar o pagamento. Tente novamente.");
@@ -59,7 +60,7 @@ export function Pricing({ currentStatus }: PricingProps) {
         }
       }
 
-      window.open(result.url, "_blank");
+      window.location.href = result.url;
     } catch (e: any) {
       console.error("Error redirecting to Customer Portal:", e);
       toast.error(e.message || "Erro ao abrir o portal de faturamento. Certifique-se de que possui uma assinatura.");

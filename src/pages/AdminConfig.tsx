@@ -50,7 +50,7 @@ export function AdminConfig() {
         }
       }
 
-      window.open(result.url, "_blank");
+      window.location.href = result.url;
     } catch (e: any) {
       console.error("Error redirecting to Customer Portal:", e);
       toast.error(e.message || "Erro ao abrir o portal de faturamento. Certifique-se de que possui uma assinatura.");
