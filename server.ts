@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import crypto from "crypto";
@@ -14,7 +14,7 @@ import fs from "fs";
 let dbAdmin: any = null;
 try {
   let adminApp: any;
-  let dbId = "default";
+  let dbId: string | undefined = undefined;
   
   // Resolve firebase-applet-config.json safely using process.cwd() so it works under Vercel bundling
   const configPath = path.join(process.cwd(), "firebase-applet-config.json");
@@ -72,9 +72,9 @@ try {
     adminApp = admin.getApp();
   }
 
-  dbId = dbIdFromConfig;
-  dbAdmin = getFirestore(adminApp, dbId);
-  console.log("Firebase Admin initialized successfully with database:", dbId, "Project:", projectId);
+  dbId = dbIdFromConfig === "(default)" ? undefined : dbIdFromConfig;
+  dbAdmin = dbId ? getFirestore(adminApp, dbId) : getFirestore(adminApp);
+  console.log("Firebase Admin initialized successfully with database:", dbId || "(default)", "Project:", projectId);
 } catch (e: any) {
   console.error("Firebase Admin initialization failed:", e.message || e);
 }
@@ -82,18 +82,19 @@ try {
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Backend fully operational on Vercel!" });
-});
-
 // Support Vercel serverless routing where the /api prefix might be stripped by the serverless handler
+// Put this at the very top of the middleware stack so it applies to ALL routes
 app.use((req, res, next) => {
   if (process.env.VERCEL && !req.url.startsWith("/api/")) {
     req.url = "/api" + req.url;
   }
   next();
+});
+
+app.use(cors());
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Backend fully operational on Vercel!" });
 });
 
 // Custom JSON parser to extract raw body for Stripe webhook signature verification
