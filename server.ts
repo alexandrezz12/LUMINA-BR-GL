@@ -85,8 +85,12 @@ const PORT = 3000;
 // Support Vercel serverless routing where the /api prefix might be stripped by the serverless handler
 // Put this at the very top of the middleware stack so it applies to ALL routes
 app.use((req, res, next) => {
-  if (process.env.VERCEL && !req.url.startsWith("/api/")) {
-    req.url = "/api" + req.url;
+  if (process.env.VERCEL) {
+    if (req.url === "/api") {
+      req.url = "/api/";
+    } else if (!req.url.startsWith("/api/")) {
+      req.url = "/api" + req.url;
+    }
   }
   next();
 });
@@ -459,6 +463,11 @@ app.post("/api/payment/create-checkout-session", async (req, res) => {
       }
     }
 
+    // Dynamically resolve client application URL from headers for frictionless production/preview redirects
+    const host = req.get("host");
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    const resolvedAppUrl = host ? `${protocol}://${host}` : (process.env.APP_URL || "http://localhost:3000");
+
     // Create checkout session with 7 days free trial
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
@@ -474,8 +483,8 @@ app.post("/api/payment/create-checkout-session", async (req, res) => {
         metadata: { userId },
       },
       client_reference_id: userId,
-      success_url: `${process.env.APP_URL || "http://localhost:3000"}/admin?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || "http://localhost:3000"}/admin/planos`,
+      success_url: `${resolvedAppUrl}/admin?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${resolvedAppUrl}/admin/planos`,
       metadata: { userId },
     });
 
@@ -548,9 +557,14 @@ app.post("/api/payment/create-portal-session", async (req, res) => {
       }
     }
 
+    // Dynamically resolve client application URL from headers for frictionless production/preview redirects
+    const host = req.get("host");
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    const resolvedAppUrl = host ? `${protocol}://${host}` : (process.env.APP_URL || "http://localhost:3000");
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${process.env.APP_URL || "http://localhost:3000"}/admin/configuracoes`,
+      return_url: `${resolvedAppUrl}/admin/configuracoes`,
     });
 
     res.json({ url: portalSession.url, stripeCustomerId });

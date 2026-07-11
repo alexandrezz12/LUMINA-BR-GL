@@ -6,16 +6,16 @@ import appletConfig from '../../firebase-applet-config.json';
 const metaEnv = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  apiKey: metaEnv.VITE_FIREBASE_API_KEY || "AIzaSyBequSEim2FzBbWv-wxnrx6kIYwLwogmqw",
-  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || "lumina-agendamentos.firebaseapp.com",
-  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || "lumina-agendamentos",
-  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || "lumina-agendamentos.firebasestorage.app",
-  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || "628645924284",
-  appId: metaEnv.VITE_FIREBASE_APP_ID || "1:628645924284:web:3772574f1357bbdd84efb9",
-  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || "G-2KXN5TLLV0",
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || appletConfig.apiKey || "AIzaSyBequSEim2FzBbWv-wxnrx6kIYwLwogmqw",
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || appletConfig.authDomain || "lumina-agendamentos.firebaseapp.com",
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || appletConfig.projectId || "lumina-agendamentos",
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket || "lumina-agendamentos.firebasestorage.app",
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || "628645924284",
+  appId: metaEnv.VITE_FIREBASE_APP_ID || appletConfig.appId || "1:628645924284:web:3772574f1357bbdd84efb9",
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || appletConfig.measurementId || "G-2KXN5TLLV0",
 };
 
-const databaseId = metaEnv.VITE_FIREBASE_DATABASE_ID || "(default)";
+const databaseId = metaEnv.VITE_FIREBASE_DATABASE_ID || appletConfig.firestoreDatabaseId || "(default)";
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, databaseId);
